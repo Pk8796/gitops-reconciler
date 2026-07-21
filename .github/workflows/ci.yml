@@ -1,0 +1,91 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Compile check - web
+        working-directory: services/web
+        run: go build ./...
+
+      - name: Compile check - api
+        working-directory: services/api
+        run: go build ./...
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Render staging manifests
+        run: helm template staging charts/app -f envs/staging/values.yaml --output-dir rendered/staging
+
+      - name: Render prod manifests
+        run: helm template prod charts/app -f envs/prod/values.yaml --output-dir rendered/prod
+
+      - name: Install conftest
+        run: |
+          curl -sL https://github.com/open-policy-agent/conftest/releases/download/v0.53.0/conftest_0.53.0_Linux_x86_64.tar.gz -o conftest.tar.gz
+          tar xzf conftest.tar.gz
+          sudo mv conftest /usr/local/bin
+
+      - name: Policy gate - staging
+        run: conftest test rendered/staging --policy policies -o table --all-namespaces
+
+      - name: Policy gate - prod
+        run: conftest test rendered/prod --policy policies -o table --all-namespaces
+
+      # everything below only runs once a PR is merged - policy + compile
+      # checks above are what actually gate a PR.
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push web image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: services/web
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/gitops-reconciler-web:${{ github.sha }}
+
+      - name: Build & push api image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: services/api
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/gitops-reconciler-api:${{ github.sha }}
+
+      # image tags are never :latest - bump staging's values.yaml to the SHA
+      # we just built and push it back, which is what Argo CD actually syncs on.
+      # Prod is promoted by hand (a PR bumping envs/prod/values.yaml) on purpose.
+      - name: Bump staging image tags
+        if: github.event_name == 'push'
+        run: |
+          sed -i "s/tag: .*/tag: \"${{ github.sha }}\"/" envs/staging/values.yaml
+          git config user.name "gitops-bot"
+          git config user.email "gitops-bot@users.noreply.github.com"
+          git add envs/staging/values.yaml
+          git diff --cached --quiet || git commit -m "ci: bump staging image tags to ${{ github.sha }}"
+          git push

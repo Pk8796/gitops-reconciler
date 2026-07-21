@@ -2,10 +2,10 @@
 web:
   replicas: 1
   image:
-    tag: init  # CI overwrites this with a commit SHA on the first push to main
+    tag: "5438a9c4632d833fb39db04a6d826e2befb81de9"
 
 api:
   replicas: 1
   errorRate: "0"
   image:
-    tag: init
+    tag: "5438a9c4632d833fb39db04a6d826e2befb81de9"

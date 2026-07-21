@@ -1,0 +1,11 @@
+# staging runs light and self-heals - it's the cheap place to be wrong.
+web:
+  replicas: 1
+  image:
+    tag: init  # CI overwrites this with a commit SHA on the first push to main
+
+api:
+  replicas: 1
+  errorRate: "0"
+  image:
+    tag: init

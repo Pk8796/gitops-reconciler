@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-reconciler-staging
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Pk8796/gitops-reconciler.git
+    targetRevision: main
+    path: charts/app
+    helm:
+      valueFiles:
+        - ../../envs/staging/values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true   # staging - being wrong here is cheap, auto-revert drift
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,24 @@
+# app-of-apps root. Point Argo CD at this one manifest once, by hand:
+#   kubectl apply -f envs/root-app.yaml
+# From then on, adding envs/<name>/application.yaml to Git is enough to add
+# a whole new environment - no manual kubectl ever again.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-reconciler-root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Pk8796/gitops-reconciler.git
+    targetRevision: main
+    path: envs
+    directory:
+      include: "{staging,prod}/application.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

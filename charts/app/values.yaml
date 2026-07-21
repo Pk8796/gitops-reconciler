@@ -1,0 +1,29 @@
+# Defaults - envs/staging/values.yaml and envs/prod/values.yaml override these
+# per-environment. Same chart, different values, that's the whole point.
+
+web:
+  image:
+    repository: ghcr.io/Pk8796/gitops-reconciler-web
+    tag: init
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+api:
+  image:
+    repository: ghcr.io/Pk8796/gitops-reconciler-api
+    tag: init
+  replicas: 1
+  errorRate: "0"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

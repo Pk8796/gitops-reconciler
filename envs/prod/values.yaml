@@ -1,0 +1,10 @@
+web:
+  replicas: 3
+  image:
+    tag: init  # bumped manually via PR when promoting a known-good staging SHA
+
+api:
+  replicas: 3
+  errorRate: "0"
+  image:
+    tag: init

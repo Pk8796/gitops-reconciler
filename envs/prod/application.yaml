@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitops-reconciler-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Pk8796/gitops-reconciler.git
+    targetRevision: main
+    path: charts/app
+    helm:
+      valueFiles:
+        - ../../envs/prod/values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    automated:
+      prune: true
+      # selfHeal deliberately omitted (defaults to false) - a human hotfixing
+      # prod mid-incident shouldn't get fought by the controller. Drift is
+      # still detected and shown as OutOfSync, just not auto-corrected.
+    syncOptions:
+      - CreateNamespace=true

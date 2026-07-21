@@ -3,7 +3,7 @@
 
 web:
   image:
-    repository: ghcr.io/Pk8796/gitops-reconciler-web
+    repository: ghcr.io/pk8796/gitops-reconciler-web
     tag: init
   replicas: 1
   resources:
@@ -16,7 +16,7 @@ web:
 
 api:
   image:
-    repository: ghcr.io/Pk8796/gitops-reconciler-api
+    repository: ghcr.io/pk8796/gitops-reconciler-api
     tag: init
   replicas: 1
   errorRate: "0"

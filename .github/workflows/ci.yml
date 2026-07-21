@@ -53,6 +53,11 @@ jobs:
 
       # everything below only runs once a PR is merged - policy + compile
       # checks above are what actually gate a PR.
+      - name: Compute lowercase owner
+        if: github.event_name == 'push'
+        id: repo
+        run: echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
       - name: Log in to GHCR
         if: github.event_name == 'push'
         uses: docker/login-action@v3
@@ -67,7 +72,7 @@ jobs:
         with:
           context: services/web
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/gitops-reconciler-web:${{ github.sha }}
+          tags: ghcr.io/${{ steps.repo.outputs.owner_lc }}/gitops-reconciler-web:${{ github.sha }}
 
       - name: Build & push api image
         if: github.event_name == 'push'
@@ -75,7 +80,7 @@ jobs:
         with:
           context: services/api
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/gitops-reconciler-api:${{ github.sha }}
+          tags: ghcr.io/${{ steps.repo.outputs.owner_lc }}/gitops-reconciler-api:${{ github.sha }}
 
       # image tags are never :latest - bump staging's values.yaml to the SHA
       # we just built and push it back, which is what Argo CD actually syncs on.
